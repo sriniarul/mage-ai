@@ -30,6 +30,10 @@ export const InlineContainerStyle = styled.div<{
   ${props => props.height && `
     height: ${props.height}px;
   `}
+
+  ${props => !props.height && `
+    height: inherit;
+  `}
 `;
 
 export const HeaderStyle = styled.div<{

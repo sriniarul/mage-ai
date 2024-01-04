@@ -63,9 +63,9 @@ type TripleLayoutProps = {
   afterHeader?: any;
   afterHeaderOffset?: number;
   afterHeightOffset?: number;
-  afterHidden: boolean;
+  afterHidden?: boolean;
   afterInnerHeightMinus?: number;
-  afterMousedownActive: boolean;
+  afterMousedownActive?: boolean;
   afterNavigationItems?: NavigationItem[];
   afterOverflow?: 'hidden';
   afterSubheader?: any;
@@ -78,7 +78,7 @@ type TripleLayoutProps = {
   beforeHeaderOffset?: number;
   beforeHeightOffset?: number;
   beforeHidden?: boolean;
-  beforeMousedownActive: boolean;
+  beforeMousedownActive?: boolean;
   beforeNavigationItems?: NavigationItem[];
   beforeWidth?: number;
   children: any;
@@ -93,14 +93,14 @@ type TripleLayoutProps = {
   leftOffset?: number;
   mainContainerFooter?: any;
   mainContainerHeader?: any;
-  mainContainerRef: any;
+  mainContainerRef?: any;
   navigationShowMore?: boolean;
   setAfterHidden?: (value: boolean) => void;
   setAfterMousedownActive?: (value: boolean) => void;
   setAfterWidth: (width: number) => void;
   setBeforeHidden?: (value: boolean) => void;
   setBeforeMousedownActive?: (value: boolean) => void;
-  setBeforeWidth: (width: number) => void;
+  setBeforeWidth?: (width: number) => void;
   uuid?: string;
 };
 
@@ -178,42 +178,44 @@ function TripleLayout({
   ]);
 
   useEffect(() => {
-    const resizeBefore = (e) => {
-      const {
-        x,
-      } = refBeforeInner?.current?.getBoundingClientRect?.() || {};
-      if (width) {
-        let newWidth = e.x;
-        if (newWidth + MAIN_MIN_WIDTH > width - (afterHidden ? 0 : afterWidth)) {
-          newWidth = (width - (afterHidden ? 0 : afterWidth)) - MAIN_MIN_WIDTH;
+    if (setBeforeWidth) {
+      const resizeBefore = (e) => {
+        const {
+          x,
+        } = refBeforeInner?.current?.getBoundingClientRect?.() || {};
+        if (width) {
+          let newWidth = e.x;
+          if (newWidth + MAIN_MIN_WIDTH > width - (afterHidden ? 0 : afterWidth)) {
+            newWidth = (width - (afterHidden ? 0 : afterWidth)) - MAIN_MIN_WIDTH;
+          }
+          // Not sure why we need to multiply by 2, but we do.
+          newWidth -= (leftOffset * 2);
+          setBeforeWidth(Math.max(newWidth, BEFORE_MIN_WIDTH));
         }
-        // Not sure why we need to multiply by 2, but we do.
-        newWidth -= (leftOffset * 2);
-        setBeforeWidth(Math.max(newWidth, BEFORE_MIN_WIDTH));
-      }
-    };
+      };
 
-    const addMousedown = (e) => {
-      if (e.offsetX >= e.target.offsetWidth - DRAGGABLE_WIDTH
-        && e.offsetX <= e.target.offsetWidth + DRAGGABLE_WIDTH
-      ) {
-        setBeforeMousedownActive?.(true);
-        e.preventDefault();
-        document?.addEventListener?.('mousemove', resizeBefore, false);
-      }
-    };
-    const removeMousemove = () => {
-      setBeforeMousedownActive?.(false);
-      document?.removeEventListener?.('mousemove', resizeBefore, false);
-    };
-    refBeforeInnerDraggable?.current?.addEventListener?.('mousedown', addMousedown, false);
-    document?.addEventListener?.('mouseup', removeMousemove, false);
+      const addMousedown = (e) => {
+        if (e.offsetX >= e.target.offsetWidth - DRAGGABLE_WIDTH
+          && e.offsetX <= e.target.offsetWidth + DRAGGABLE_WIDTH
+        ) {
+          setBeforeMousedownActive?.(true);
+          e.preventDefault();
+          document?.addEventListener?.('mousemove', resizeBefore, false);
+        }
+      };
+      const removeMousemove = () => {
+        setBeforeMousedownActive?.(false);
+        document?.removeEventListener?.('mousemove', resizeBefore, false);
+      };
+      refBeforeInnerDraggable?.current?.addEventListener?.('mousedown', addMousedown, false);
+      document?.addEventListener?.('mouseup', removeMousemove, false);
 
-    return () => {
-      refBeforeInnerDraggable?.current?.removeEventListener?.('mousedown', addMousedown, false);
-      document?.removeEventListener?.('mouseup', removeMousemove, false);
-      removeMousemove();
-    };
+      return () => {
+        refBeforeInnerDraggable?.current?.removeEventListener?.('mousedown', addMousedown, false);
+        document?.removeEventListener?.('mouseup', removeMousemove, false);
+        removeMousemove();
+      };
+    }
   }, [
     afterHidden,
     afterWidth,
@@ -575,14 +577,16 @@ function TripleLayout({
             width: beforeWidthFinal,
           }}
         >
-          <DraggableStyle
-            active={beforeMousedownActive}
-            disabled={beforeHidden}
-            contrast={beforeDividerContrast}
-            ref={refBeforeInnerDraggable}
-            right={0}
-            top={contained ? 0 : ASIDE_HEADER_HEIGHT}
-          />
+          {setBeforeWidth && (
+            <DraggableStyle
+              active={beforeMousedownActive}
+              disabled={beforeHidden}
+              contrast={beforeDividerContrast}
+              ref={refBeforeInnerDraggable}
+              right={0}
+              top={contained ? 0 : ASIDE_HEADER_HEIGHT}
+            />
+          )}
 
           {hasBeforeNavigationItems && (
             <NavigationStyle>
@@ -747,6 +751,7 @@ function TripleLayout({
     refAfterInnerDraggable,
     refBeforeInnerDraggable,
     shouldHideAfterWrapper,
+    setBeforeWidth,
   ]);
 
   return (

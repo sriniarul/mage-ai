@@ -81,7 +81,7 @@ type TripleLayoutProps = {
   beforeMousedownActive?: boolean;
   beforeNavigationItems?: NavigationItem[];
   beforeWidth?: number;
-  children: any;
+  children?: any;
   contained?: boolean;
   footerOffset?: number;
   header?: any;
@@ -97,7 +97,7 @@ type TripleLayoutProps = {
   navigationShowMore?: boolean;
   setAfterHidden?: (value: boolean) => void;
   setAfterMousedownActive?: (value: boolean) => void;
-  setAfterWidth: (width: number) => void;
+  setAfterWidth?: (width: number) => void;
   setBeforeHidden?: (value: boolean) => void;
   setBeforeMousedownActive?: (value: boolean) => void;
   setBeforeWidth?: (width: number) => void;
@@ -230,16 +230,18 @@ function TripleLayout({
 
   useEffect(() => {
     const resizeAfter = (e) => {
-      const {
-        x,
-      } = refAfterInner?.current?.getBoundingClientRect?.() || {};
+      if (setAfterWidth) {
+        const {
+          x,
+        } = refAfterInner?.current?.getBoundingClientRect?.() || {};
 
-      if (width) {
-        let newWidth = width - e.x;
-        if (newWidth + MAIN_MIN_WIDTH > width - (beforeHidden ? 0 : beforeWidth)) {
-          newWidth = (width - (beforeHidden ? 0 : beforeWidth)) - MAIN_MIN_WIDTH;
+        if (width) {
+          let newWidth = width - e.x;
+          if (newWidth + MAIN_MIN_WIDTH > width - (beforeHidden ? 0 : beforeWidth)) {
+            newWidth = (width - (beforeHidden ? 0 : beforeWidth)) - MAIN_MIN_WIDTH;
+          }
+          setAfterWidth?.(Math.max(newWidth, AFTER_MIN_WIDTH));
         }
-        setAfterWidth(Math.max(newWidth, AFTER_MIN_WIDTH));
       }
     };
 

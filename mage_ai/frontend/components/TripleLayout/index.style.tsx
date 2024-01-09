@@ -305,14 +305,18 @@ export const DraggableStyle = styled.div<{
 `;
 
 export const MainWrapper = styled.div<{
+  noBackground?: boolean;
   inline?: boolean;
 }>`
   height: 100%;
   z-index: 1;
 
   ${props => `
-    background-color: ${(props.theme.background || dark.background).codeArea};
     position: ${props.inline ? 'absolute' : 'fixed'};
+  `}
+
+  ${props => !props.noBackground && `
+    background-color: ${(props.theme.background || dark.background).codeArea};
   `}
 `;
 

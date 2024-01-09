@@ -95,6 +95,7 @@ type TripleLayoutProps = {
   mainContainerHeader?: any;
   mainContainerRef?: any;
   navigationShowMore?: boolean;
+  noBackground?: boolean;
   setAfterHidden?: (value: boolean) => void;
   setAfterMousedownActive?: (value: boolean) => void;
   setAfterWidth?: (width: number) => void;
@@ -144,6 +145,7 @@ function TripleLayout({
   mainContainerHeader,
   mainContainerRef,
   navigationShowMore,
+  noBackground,
   setAfterHidden,
   setAfterMousedownActive,
   setAfterWidth,
@@ -629,6 +631,7 @@ function TripleLayout({
 
       <MainWrapper
         inline={inline}
+        noBackground={noBackground}
         style={{
           left: beforeWidthFinal + leftOffset,
           width: mainWidth,
@@ -750,6 +753,7 @@ function TripleLayout({
     mainContainerRef,
     mainWidth,
     navigationShowMore,
+    noBackground,
     refAfterInnerDraggable,
     refBeforeInnerDraggable,
     shouldHideAfterWrapper,

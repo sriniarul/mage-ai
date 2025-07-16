@@ -15,7 +15,7 @@ dask>=2022.2.0
 datadog==0.44.0
 freezegun==1.2.2
 great-expectations==0.18.12
-httpx==0.25.0
+httpx==0.23.3
 inflection==0.5.1
 ipykernel==6.15.0
 ipython==8.10.0
@@ -163,3 +163,12 @@ tzlocal==4.2
 xlsx2csv==0.8.1
 xmltodict==0.13.0
 zenpy==2.0.25
+
+
+#custom
+minio
+pyzipper
+authlib
+hvac
+confluent_kafka==2.0.2
+hydra-cli

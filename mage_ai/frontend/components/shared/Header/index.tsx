@@ -178,15 +178,20 @@ function Header({
   ]);
 
   const logout = () => {
-    AuthToken.logout(() => {
-      api.sessions.updateAsyncServer(null, 1)
-        .then(() => {
+    // First, call the server to logout
+    api.sessions.updateAsyncServer(null, 1)
+      .then(() => {
+        // Only clear local tokens after successful server response
+        AuthToken.logout(() => {
           redirectToUrl('/sign-in');
-        })
-        .catch(() => {
+        }, router?.basePath);
+      })
+      .catch(() => {
+        // Even if server logout fails, clear local tokens and redirect
+        AuthToken.logout(() => {
           redirectToUrl('/');
-        });
-    }, router?.basePath);
+        }, router?.basePath);
+      });
   };
 
   const breadcrumbProjects = [];

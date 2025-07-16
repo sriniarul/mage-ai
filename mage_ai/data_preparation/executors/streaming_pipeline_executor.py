@@ -93,6 +93,18 @@ class StreamingPipelineExecutor(PipelineExecutor):
         else:
             self.logger = DictLogger(self.logger_manager.logger, logging_tags=tags)
             stdout = StreamToLogger(self.logger, logging_tags=tags)
+        
+        # Log pipeline execution start
+        self.logger.info(
+            f'Starting streaming pipeline execution: {self.pipeline.uuid}',
+            **merge_dict(dict(
+                pipeline_run_id=pipeline_run_id,
+                source_block=self.source_block.uuid,
+                sink_blocks=[b.uuid for b in self.sink_blocks],
+                retry_config=retry_config,
+            ), tags),
+        )
+        
         try:
             if retry_config is None:
                 retry_config = self.pipeline.retry_config or dict()
@@ -119,11 +131,26 @@ class StreamingPipelineExecutor(PipelineExecutor):
                             pipeline_run_id=pipeline_run_id,
                         )
             __execute_with_retry()
+            
+            # Log successful completion
+            self.logger.info(
+                f'Streaming pipeline execution completed successfully: {self.pipeline.uuid}',
+                **merge_dict(dict(
+                    pipeline_run_id=pipeline_run_id,
+                    total_attempts=self.retry_metadata.get('attempts', 0) + 1,
+                ), tags),
+            )
+            
         except Exception as e:
             if not build_block_output_stdout:
                 self.logger.exception(
                         f'Failed to execute streaming pipeline {self.pipeline.uuid}',
-                        **merge_dict(dict(error=e), tags),
+                        **merge_dict(dict(
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            total_attempts=self.retry_metadata.get('attempts', 0) + 1,
+                            traceback=traceback.format_exc(),
+                        ), tags),
                     )
             if not infinite_retries:
                 # If pipeline retry config is present, fail the pipeline after the retries
@@ -150,6 +177,14 @@ class StreamingPipelineExecutor(PipelineExecutor):
             global_vars = dict()
 
         # Initialize source block
+        self.logger.info(
+            f'Initializing source block: {self.source_block.uuid}',
+            **merge_dict(dict(
+                block_type=self.source_block.type,
+                block_language=self.source_block.language,
+            ), self.logging_tags),
+        )
+        
         if self.source_block.language == BlockLanguage.PYTHON:
             source = SourceFactory.get_python_source(
                 self.source_block.content,
@@ -168,10 +203,33 @@ class StreamingPipelineExecutor(PipelineExecutor):
                     'streaming_checkpoint',
                 ),
             )
+        
+        self.logger.info(
+            f'Source block initialized successfully: {self.source_block.uuid}',
+            **merge_dict(dict(
+                source_type=type(source).__name__,
+                consume_method=getattr(source, 'consume_method', None),
+            ), self.logging_tags),
+        )
 
         # Initialize destination blocks
+        self.logger.info(
+            f'Initializing {len(self.sink_blocks)} sink blocks',
+            **merge_dict(dict(
+                sink_block_uuids=[b.uuid for b in self.sink_blocks],
+            ), self.logging_tags),
+        )
+        
         sinks_by_uuid = dict()
         for sink_block in self.sink_blocks:
+            self.logger.info(
+                f'Initializing sink block: {sink_block.uuid}',
+                **merge_dict(dict(
+                    block_type=sink_block.type,
+                    block_language=sink_block.language,
+                ), self.logging_tags),
+            )
+            
             if sink_block.language == BlockLanguage.PYTHON:
                 sinks_by_uuid[sink_block.uuid] = SinkFactory.get_python_sink(
                     sink_block.content,
@@ -185,6 +243,13 @@ class StreamingPipelineExecutor(PipelineExecutor):
                         'buffer',
                     ),
                 )
+            
+            self.logger.info(
+                f'Sink block initialized successfully: {sink_block.uuid}',
+                **merge_dict(dict(
+                    sink_type=type(sinks_by_uuid[sink_block.uuid]).__name__,
+                ), self.logging_tags),
+            )
 
         def __deepcopy(data):
             if data is None:
@@ -227,15 +292,36 @@ class StreamingPipelineExecutor(PipelineExecutor):
 
         def handle_batch_events(messages: List[Union[Dict, str]], **kwargs):
             # Handle the events with DFS
+            self.logger.info(
+                f'Processing batch of {len(messages)} messages',
+                **merge_dict(dict(
+                    message_count=len(messages),
+                    batch_timestamp=datetime.now().isoformat(),
+                ), self.logging_tags),
+            )
 
             outputs_by_block = dict()
             outputs_by_block[self.source_block.uuid] = messages
 
-            handle_batch_events_recursively(
-                self.source_block,
-                outputs_by_block,
-                **merge_dict(global_vars, kwargs),
-            )
+            try:
+                handle_batch_events_recursively(
+                    self.source_block,
+                    outputs_by_block,
+                    **merge_dict(global_vars, kwargs),
+                )
+                self.logger.info(
+                    f'Successfully processed batch of {len(messages)} messages',
+                    **self.logging_tags,
+                )
+            except Exception as e:
+                self.logger.error(
+                    f'Error processing batch of {len(messages)} messages: {str(e)}',
+                    **merge_dict(dict(
+                        error=str(e),
+                        message_count=len(messages),
+                    ), self.logging_tags),
+                )
+                raise
 
         async def handle_event_async(message, **kwargs):
             outputs_by_block = dict()
@@ -258,21 +344,63 @@ class StreamingPipelineExecutor(PipelineExecutor):
             )
 
         # Long running method
+        self.logger.info(
+            f'Starting message consumption with method: {source.consume_method}',
+            **merge_dict(dict(
+                consume_method=str(source.consume_method),
+                source_type=type(source).__name__,
+            ), self.logging_tags),
+        )
+        
         try:
             if source.consume_method == SourceConsumeMethod.BATCH_READ:
+                self.logger.info('Starting batch read consumption', **self.logging_tags)
                 source.batch_read(handler=handle_batch_events)
             elif source.consume_method == SourceConsumeMethod.READ_ASYNC:
+                self.logger.info('Starting async read consumption', **self.logging_tags)
                 loop = asyncio.get_event_loop()
                 if loop is not None:
                     loop.run_until_complete(source.read_async(handler=handle_event_async))
                 else:
                     asyncio.run(source.read_async(handler=handle_event_async))
             elif source.consume_method == SourceConsumeMethod.READ:
+                self.logger.info('Starting synchronous read consumption', **self.logging_tags)
                 source.read(handler=handle_event)
+        except Exception as e:
+            self.logger.error(
+                f'Error during message consumption: {str(e)}',
+                **merge_dict(dict(
+                    error=str(e),
+                    consume_method=str(source.consume_method),
+                ), self.logging_tags),
+            )
+            raise
         finally:
-            source.destroy()
-            for sink in sinks_by_uuid.values():
-                sink.destroy()
+            self.logger.info('Cleaning up resources', **self.logging_tags)
+            try:
+                source.destroy()
+                self.logger.info('Source destroyed successfully', **self.logging_tags)
+            except Exception as e:
+                self.logger.error(
+                    f'Error destroying source: {str(e)}',
+                    **merge_dict(dict(error=str(e)), self.logging_tags),
+                )
+            
+            for sink_uuid, sink in sinks_by_uuid.items():
+                try:
+                    sink.destroy()
+                    self.logger.info(
+                        f'Sink destroyed successfully: {sink_uuid}',
+                        **self.logging_tags,
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f'Error destroying sink {sink_uuid}: {str(e)}',
+                        **merge_dict(dict(
+                            error=str(e),
+                            sink_uuid=sink_uuid,
+                        ), self.logging_tags),
+                    )
 
     @safe_db_query
     def __update_pipeline_run_status(

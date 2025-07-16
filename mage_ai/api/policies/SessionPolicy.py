@@ -57,7 +57,7 @@ SessionPolicy.allow_actions([
     constants.UPDATE,
 ], scopes=[
     OauthScope.CLIENT_PRIVATE,
-], condition=lambda policy: policy.has_at_least_viewer_role())
+])
 
 SessionPolicy.allow_read([
     'expires',
@@ -77,7 +77,7 @@ SessionPolicy.allow_read([
     OauthScope.CLIENT_PRIVATE,
 ], on_action=[
     constants.UPDATE,
-], condition=lambda policy: policy.has_at_least_viewer_role())
+])
 
 SessionPolicy.allow_write([
     'email',

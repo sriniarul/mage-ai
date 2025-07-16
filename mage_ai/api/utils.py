@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 from mage_ai.api.errors import ApiError
+from mage_ai.authentication.oauth2 import is_token_valid, encode_token
 from mage_ai.orchestration.constants import Entity
 from mage_ai.orchestration.db.models.oauth import (
     Oauth2AccessToken,
@@ -17,7 +18,11 @@ from mage_ai.settings import (
 from mage_ai.shared.environments import is_test
 
 
-def authenticate_client_and_token(client_id: str, token: str) -> Tuple[Oauth2AccessToken, bool]:
+def authenticate_client_and_token(
+    client_id: str, 
+    token: str, 
+    bypass_blacklist_check: bool = False
+) -> Tuple[Oauth2AccessToken, bool]:
     oauth_token = Oauth2AccessToken.query.filter(
         Oauth2AccessToken.oauth2_application_id == client_id,
         Oauth2AccessToken.token == token,
@@ -25,7 +30,13 @@ def authenticate_client_and_token(client_id: str, token: str) -> Tuple[Oauth2Acc
 
     valid = False
     if oauth_token:
+        # Check if OAuth token is valid (not expired)
         valid = oauth_token.is_valid()
+        
+        # Additionally check if the JWT version is blacklisted (unless bypassed)
+        if valid and not bypass_blacklist_check:
+            jwt_token = encode_token(oauth_token.token, oauth_token.expires)
+            valid = is_token_valid(jwt_token)
 
     return oauth_token, valid
 

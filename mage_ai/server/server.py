@@ -125,6 +125,7 @@ from mage_ai.shared.logger import LoggingLevel, set_logging_format
 from mage_ai.shared.singletons.memory import get_memory_manager_controller
 from mage_ai.shared.utils import is_port_in_use
 from mage_ai.usage_statistics.logger import UsageStatisticLogger
+from mage_ai.authentication.cleanup import run_auth_cleanup
 
 EXPORTS_FOLDER = 'frontend_dist'
 BASE_PATH_EXPORTS_FOLDER = 'frontend_dist_base_path'
@@ -724,6 +725,14 @@ async def main(
             SCHEDULER_AUTO_RESTART_INTERVAL,
         )
         periodic_callback.start()
+        
+    # Clean up authentication tokens periodically (daily)
+    if not status_only:
+        auth_cleanup_callback = PeriodicCallback(
+            run_auth_cleanup,
+            24 * 60 * 60 * 1000,  # 24 hours in milliseconds
+        )
+        auth_cleanup_callback.start()
 
     get_memory_manager_controller().events
 

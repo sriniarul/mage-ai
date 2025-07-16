@@ -3,7 +3,7 @@ from datetime import datetime
 from mage_ai.api.errors import ApiError
 from mage_ai.api.resources.BaseResource import BaseResource
 from mage_ai.authentication.ldap import new_ldap_connection
-from mage_ai.authentication.oauth2 import encode_token, generate_access_token
+from mage_ai.authentication.oauth2 import encode_token, generate_access_token, blacklist_token
 from mage_ai.authentication.passwords import verify_password
 from mage_ai.authentication.providers.constants import NAME_TO_PROVIDER
 from mage_ai.orchestration.db import safe_db_query, safe_db_query_async
@@ -145,9 +145,27 @@ class SessionResource(BaseResource):
 
     @safe_db_query
     def update(self, payload, **kwargs):
+        # Handle case where there's no active session to logout from
+        if not self.model:
+            # No active session, but logout request should still succeed
+            # to ensure consistent behavior on the frontend
+            return self.__class__(None, None, **kwargs)
+            
+        # Blacklist the current JWT token before expiring the session
+        try:
+            current_jwt = self.token()
+            if current_jwt:
+                blacklist_token(current_jwt, reason='logout')
+        except Exception:
+            # If token generation fails, continue with logout anyway
+            pass
+            
+        # Expire the OAuth2AccessToken
         self.model.expires = datetime.utcnow()
         self.model.save()
 
     @safe_db_query
     def token(self):
+        if not self.model:
+            return None
         return encode_token(self.model.token, self.model.expires)

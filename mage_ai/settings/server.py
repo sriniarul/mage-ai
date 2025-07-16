@@ -100,9 +100,10 @@ REQUIRE_USER_PERMISSIONS = REQUIRE_USER_AUTHENTICATION and get_bool_value(
 )
 AUTHENTICATION_MODE = os.getenv('AUTHENTICATION_MODE', 'LOCAL')
 try:
-    MAGE_ACCESS_TOKEN_EXPIRY_TIME = int(os.getenv('MAGE_ACCESS_TOKEN_EXPIRY_TIME', '2592000'))
+    # Default to 1 hour (3600 seconds) instead of 30 days for better security
+    MAGE_ACCESS_TOKEN_EXPIRY_TIME = int(os.getenv('MAGE_ACCESS_TOKEN_EXPIRY_TIME', '3600'))
 except ValueError:
-    MAGE_ACCESS_TOKEN_EXPIRY_TIME = 2592000
+    MAGE_ACCESS_TOKEN_EXPIRY_TIME = 3600
 
 # Default access level to give to users created when authenticated through OAuth
 # for the first time. value should be the name of a Mage role (e.g. Viewer, Editor, Admin)

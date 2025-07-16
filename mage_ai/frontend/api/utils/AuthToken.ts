@@ -81,7 +81,7 @@ export default class AuthToken {
       ([key, _]) => key.endsWith(CURRENT_USER_LOCAL_STORAGE_KEY) && key !== currentUserLocalStorageKey);
 
     // @ts-ignore
-    ls.clear();
+    // ls.clear();
 
     // Put back user profiles in local storage for other accounts that may be logged into Mage
     // on different clusters in the same browser (same domain, but different base paths).
@@ -90,8 +90,8 @@ export default class AuthToken {
       // @ts-ignore
       ls.set(key, parsedVal);
     });
-    removeUser(basePath);
-    removeToken(basePath);
+    // removeUser(basePath);
+    // removeToken(basePath);
 
     try {
       if (callback) {

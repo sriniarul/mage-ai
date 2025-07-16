@@ -85,6 +85,7 @@ function preprocess(url: string, opts: FetcherOptionsType = {}) {
   }
 
   data.headers = new Headers(headers);
+  data.credentials = 'include';  // Include cookies in requests
 
   const queryObj = {
     ...queryFromUrl(url),
@@ -150,6 +151,7 @@ export function buildFetchV2(urlArg: string, opts: FetcherOptionsType = {}) {
         responseType,
         signal,
         url: finalUrl,
+        withCredentials: true,  // Include cookies in requests
       })
       .then(response => {
         resolve(response);

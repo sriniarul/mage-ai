@@ -396,7 +396,11 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
             )
 
             for client in cls.clients:
-                client.write_message(json.dumps(message_final))
+                try:
+                    client.write_message(json.dumps(message_final))
+                except tornado.websocket.WebSocketClosedError:
+                    # Remove closed client from the list
+                    cls.clients.remove(client)
 
     async def __execute_block(
         self,

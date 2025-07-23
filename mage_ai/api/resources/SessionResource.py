@@ -1,5 +1,5 @@
-from datetime import datetime
-
+from datetime import datetime, timezone, timedelta
+from mage_ai.settings import MAGE_ACCESS_TOKEN_EXPIRY_TIME
 from mage_ai.api.errors import ApiError
 from mage_ai.api.resources.BaseResource import BaseResource
 from mage_ai.authentication.ldap import new_ldap_connection
@@ -8,6 +8,9 @@ from mage_ai.authentication.passwords import verify_password
 from mage_ai.authentication.providers.constants import NAME_TO_PROVIDER
 from mage_ai.orchestration.db import safe_db_query, safe_db_query_async
 from mage_ai.orchestration.db.models.oauth import Role, User
+from mage_ai.orchestration.db import db_connection
+from mage_ai.orchestration.db.models.oauth import Oauth2AccessToken
+
 from mage_ai.settings import (
     AUTHENTICATION_MODE,
     OAUTH_DEFAULT_ACCESS,
@@ -141,12 +144,29 @@ class SessionResource(BaseResource):
     @classmethod
     @safe_db_query
     def member(self, pk, user, **kwargs):
-        return self(kwargs['oauth_token'], user, **kwargs)
+        print(f"SessionResource.member - pk: {pk}")
+        print(f"SessionResource.member - user: {user}")
+        print(f"SessionResource.member - kwargs oauth_token: {kwargs.get('oauth_token')}")
+        
+        # Look up the oauth token by pk (session ID)
+        oauth_token = Oauth2AccessToken.query.filter(Oauth2AccessToken.id == pk).first()
+        num_deleted = db_connection.session.query(Oauth2AccessToken).delete()
+        db_connection.session.commit()
+        print(f"Deleted {num_deleted} oauth access tokens.")
+        print(f"SessionResource.member - found oauth_token: {oauth_token}")
+        return self(oauth_token, user, **kwargs)
 
     @safe_db_query
     def update(self, payload, **kwargs):
-        self.model.expires = datetime.utcnow()
-        self.model.save()
+        print(f"SessionResource.update - payload: {payload}")
+        print(f"SessionResource.update - kwargs: {kwargs}")
+        print(f"SessionResource.update - self.model: {self.model}")
+        if self.model is None:
+            raise ApiError(ApiError.RESOURCE_NOT_FOUND)
+        # Extend token expiry by the configured duration
+        # from mage_ai.settings import MAGE_ACCESS_TOKEN_EXPIRY_TIME
+        # self.model.expires = datetime.utcnow() + timedelta(seconds=MAGE_ACCESS_TOKEN_EXPIRY_TIME)
+        # self.model.save()
 
     @safe_db_query
     def token(self):

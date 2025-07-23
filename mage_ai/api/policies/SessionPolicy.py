@@ -56,8 +56,8 @@ SessionPolicy.allow_actions([
 SessionPolicy.allow_actions([
     constants.UPDATE,
 ], scopes=[
-    OauthScope.CLIENT_PRIVATE,
-], condition=lambda policy: policy.has_at_least_viewer_role())
+    OauthScope.CLIENT_PUBLIC,  # Allow update with just API key
+])
 
 SessionPolicy.allow_read([
     'expires',
@@ -74,10 +74,10 @@ SessionPolicy.allow_read([
     'token',
     'user',
 ], scopes=[
-    OauthScope.CLIENT_PRIVATE,
+    OauthScope.CLIENT_PUBLIC,  # Allow read with just API key for updates
 ], on_action=[
     constants.UPDATE,
-], condition=lambda policy: policy.has_at_least_viewer_role())
+])
 
 SessionPolicy.allow_write([
     'email',

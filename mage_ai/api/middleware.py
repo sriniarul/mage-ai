@@ -75,7 +75,12 @@ class OAuthMiddleware(RequestHandler):
                 self.request.__setattr__('error', ApiError.INVALID_API_KEY)
                 self.set_status(ApiError.INVALID_API_KEY['code'])
             else:
-                should_check = False
+                request_path = self.request.path
+                is_session_endpoint = request_path.endswith('/sessions') or '/sessions/' in request_path
+                if is_session_endpoint:
+                 should_check = False
+                else:
+                 should_check = True
                 oauth_token = None
                 if token_from_header:
                     oauth_token, valid = authenticate_client_and_token(

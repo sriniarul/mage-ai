@@ -73,7 +73,7 @@ except ValueError:
     DISABLE_NOTEBOOK_EDIT_ACCESS = 1 if os.getenv('DISABLE_NOTEBOOK_EDIT_ACCESS') else 0
 
 
-DISABLE_TERMINAL = get_bool_value(os.getenv('DISABLE_TERMINAL', '0').lower())
+DISABLE_TERMINAL = get_bool_value(os.getenv('DISABLE_TERMINAL', '1').lower())
 
 
 def is_disable_pipeline_edit_access(
@@ -100,9 +100,9 @@ REQUIRE_USER_PERMISSIONS = REQUIRE_USER_AUTHENTICATION and get_bool_value(
 )
 AUTHENTICATION_MODE = os.getenv('AUTHENTICATION_MODE', 'LOCAL')
 try:
-    MAGE_ACCESS_TOKEN_EXPIRY_TIME = int(os.getenv('MAGE_ACCESS_TOKEN_EXPIRY_TIME', '2592000'))
+    MAGE_ACCESS_TOKEN_EXPIRY_TIME = int(os.getenv('MAGE_ACCESS_TOKEN_EXPIRY_TIME', '3600'))
 except ValueError:
-    MAGE_ACCESS_TOKEN_EXPIRY_TIME = 2592000
+    MAGE_ACCESS_TOKEN_EXPIRY_TIME = 3600
 
 # Default access level to give to users created when authenticated through OAuth
 # for the first time. value should be the name of a Mage role (e.g. Viewer, Editor, Admin)

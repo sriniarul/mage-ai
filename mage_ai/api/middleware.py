@@ -76,7 +76,7 @@ class OAuthMiddleware(RequestHandler):
                 self.set_status(ApiError.INVALID_API_KEY['code'])
             else:
                 request_path = self.request.path
-                is_session_endpoint = request_path.endswith('/sessions') or '/sessions/' in request_path
+                is_session_endpoint = (request_path.endswith('/sessions') or '/sessions/' in request_path or request_path.endswith('/oauths') or '/oauths/' in request_path)
                 if is_session_endpoint:
                  should_check = False
                 else:

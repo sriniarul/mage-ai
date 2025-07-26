@@ -49,7 +49,13 @@ function preprocess(url: string, opts: FetcherOptionsType = {}) {
 
   const headers = {
     'Content-Type': 'application/json',
+    'Origin': 'https://mage-audit.aws.khushibaby.org',
   };
+
+  // Add Referer header if available (for browser requests)
+  if (typeof window !== 'undefined' && window.location) {
+    headers['Referer'] = window.location.href;
+  }
   const data: any = {
     method,
   };

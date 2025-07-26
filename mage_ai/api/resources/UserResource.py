@@ -210,6 +210,7 @@ class UserResource(DatabaseResource):
                 db_connection.session.execute(delete_statement)
 
         return super().update(ignore_keys(payload, [
+            'email',
             'owner',
             'password',
             'password_confirmation',

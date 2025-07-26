@@ -24,7 +24,8 @@ class BaseHandler(tornado.web.RequestHandler):
     model_class = None
 
     def check_origin(self, origin):
-        return True
+        allowed_origins = ['https://mage-audit.aws.khushibaby.org']
+        return origin in allowed_origins
 
     def get_bool_argument(self, name, default_value=None):
         value = self.get_argument(name, default_value)
@@ -46,10 +47,10 @@ class BaseHandler(tornado.web.RequestHandler):
         self.finish()
 
     def set_default_headers(self):
-        methods = 'DELETE, GET, PATCH, POST, PUT, OPTIONS'
-        self.set_header('Access-Control-Allow-Headers', '*')
+        methods = 'GET, POST, PUT, DELETE, OPTIONS'
+        self.set_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
         self.set_header('Access-Control-Allow-Methods', methods)
-        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Origin', 'https://mage-audit.aws.khushibaby.org')
         self.set_header('Content-Type', 'application/json')
 
     def write(self, chunk):
